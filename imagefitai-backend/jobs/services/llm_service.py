@@ -96,8 +96,17 @@ Respond ONLY with valid JSON in this exact format:
 
             response_text = response_text.strip()
 
+            # Find JSON object in response (in case there's extra text)
+            start_idx = response_text.find('{')
+            end_idx = response_text.rfind('}') + 1
+
+            if start_idx == -1 or end_idx == 0:
+                raise Exception("No JSON object found in LLM response")
+
+            json_text = response_text[start_idx:end_idx]
+
             # Parse JSON
-            result = json.loads(response_text)
+            result = json.loads(json_text)
 
             # Validate required fields
             required_fields = ['constraints', 'commands', 'final_output', 'summary']

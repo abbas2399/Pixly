@@ -16,6 +16,7 @@ export interface JobCreateResponse {
 export interface JobStatusResponse {
   jobId: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
+  currentStep?: string;
   originalImageUrl?: string;
   outputImageUrl?: string;
   summary?: string;

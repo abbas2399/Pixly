@@ -9,16 +9,16 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [jobStatus, setJobStatus] = useState<JobStatusResponse | null>(null);
   const [error, setError] = useState('');
+  // FIXED: Added currentStep variable
+  const [currentStep, setCurrentStep] = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         setError('Please select an image file');
         return;
       }
-      // Validate file size (max 50MB)
       if (file.size > 50 * 1024 * 1024) {
         setError('File size must be less than 50MB');
         return;
@@ -38,21 +38,29 @@ function App() {
         const status = await apiService.getJobStatus(jobId);
         setJobStatus(status);
 
+        // Update current step from backend
+        if (status.currentStep) {
+          setCurrentStep(status.currentStep);
+        }
+
         if (status.status === 'completed' || status.status === 'failed') {
           setIsProcessing(false);
+          setCurrentStep('');
           return;
         }
 
         attempts++;
         if (attempts < maxAttempts) {
-          setTimeout(poll, 2000); // Poll every 2 seconds
+          setTimeout(poll, 1000); // Poll every 1 second
         } else {
           setError('Job timed out. Please try again.');
           setIsProcessing(false);
+          setCurrentStep('');
         }
       } catch (err) {
         setError('Failed to get job status');
         setIsProcessing(false);
+        setCurrentStep('');
       }
     };
 
@@ -70,27 +78,27 @@ function App() {
     setJobStatus(null);
 
     try {
-      // Step 1: Get presigned URL
+      setCurrentStep('Preparing upload...');
       const presignedData = await apiService.getPresignedUrl(
         selectedFile.name,
         selectedFile.type
       );
 
-      // Step 2: Upload to S3
+      setCurrentStep('Uploading image to cloud...');
       await apiService.uploadToS3(presignedData.uploadUrl, selectedFile);
 
-      // Step 3: Create job
+      setCurrentStep('Starting job...');
       const jobData = await apiService.createJob({
         s3Key: presignedData.s3Key,
         rulesText: requirements,
       });
 
-      // Step 4: Poll for status
       pollJobStatus(jobData.jobId);
 
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
       setIsProcessing(false);
+      setCurrentStep('');
     }
   };
 
@@ -99,6 +107,7 @@ function App() {
     setRequirements('');
     setJobStatus(null);
     setError('');
+    setCurrentStep('');
   };
 
   return (
@@ -113,39 +122,39 @@ function App() {
           {/* Step 1: File Upload */}
           <div className="section">
             <h3>Step 1: Upload Your Image</h3>
-          <label className="file-upload-btn">
-  <input
-    type="file"
-    accept="image/*"
-    onChange={handleFileChange}
-    disabled={isProcessing}
-    style={{ display: 'none' }}
-  />
-  <svg
-    aria-hidden="true"
-    stroke="currentColor"
-    strokeWidth="2"
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      strokeWidth="2"
-      stroke="#ffffff"
-      d="M13.5 3H12H8C6.34315 3 5 4.34315 5 6V18C5 19.6569 6.34315 21 8 21H11M13.5 3L19 8.625M13.5 3V7.625C13.5 8.17728 13.9477 8.625 14.5 8.625H19M19 8.625V11.8125"
-      strokeLinejoin="round"
-      strokeLinecap="round"
-    ></path>
-    <path
-      strokeLinejoin="round"
-      strokeLinecap="round"
-      strokeWidth="2"
-      stroke="#ffffff"
-      d="M17 15V18M17 21V18M17 18H14M17 18H20"
-    ></path>
-  </svg>
-  Upload Image
-</label>
+            <label className="file-upload-btn">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                disabled={isProcessing}
+                style={{ display: 'none' }}
+              />
+              <svg
+                aria-hidden="true"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeWidth="2"
+                  stroke="#ffffff"
+                  d="M13.5 3H12H8C6.34315 3 5 4.34315 5 6V18C5 19.6569 6.34315 21 8 21H11M13.5 3L19 8.625M13.5 3V7.625C13.5 8.17728 13.9477 8.625 14.5 8.625H19M19 8.625V11.8125"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                ></path>
+                <path
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  strokeWidth="2"
+                  stroke="#ffffff"
+                  d="M17 15V18M17 21V18M17 18H14M17 18H20"
+                ></path>
+              </svg>
+              Upload Image
+            </label>
             {selectedFile && (
               <p className="success">
                 ✓ Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
@@ -176,6 +185,14 @@ function App() {
           >
             {isProcessing ? 'Processing...' : 'Process Image'}
           </button>
+
+          {/* NEW: Processing Steps Display */}
+          {isProcessing && currentStep && (
+            <div className="processing-steps">
+              <div className="spinner"></div>
+              <p>{currentStep}</p>
+            </div>
+          )}
 
           {/* Error Display */}
           {error && <p className="error">{error}</p>}
