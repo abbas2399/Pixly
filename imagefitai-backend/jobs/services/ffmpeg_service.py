@@ -1,7 +1,7 @@
 import subprocess
+import shlex
 import os
 import shutil
-import uuid
 import json
 
 
@@ -80,8 +80,8 @@ class FFmpegService:
 
         try:
             result = subprocess.run(
-                command,
-                shell=True,
+                shlex.split(command),
+                shell=False,
                 cwd=job_dir,
                 capture_output=True,
                 text=True,

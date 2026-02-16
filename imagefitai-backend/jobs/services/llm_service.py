@@ -33,11 +33,16 @@ INPUT FILENAME: {input_filename}
 FFMPEG EXAMPLES FOR COMMON OPERATIONS:
 - Convert to PNG: ffmpeg -i {input_filename} output.png
 - Convert to JPG: ffmpeg -i {input_filename} output.jpg
+- Change background to solid color: ffmpeg -i {input_filename} -vf "colorkey=white:0.3:0.2,format=rgba" -f lavfi -i color=c=black:s=1920x1080 -filter_complex "[1][0]overlay" -frames:v 1 output.png
 - Resize to specific dimensions: ffmpeg -i {input_filename} -vf "scale=800:600" output.jpg
 - Resize maintaining aspect ratio (width 800): ffmpeg -i {input_filename} -vf "scale=800:-1" output.jpg
 - Resize maintaining aspect ratio (height 600): ffmpeg -i {input_filename} -vf "scale=-1:600" output.jpg
 - Convert and resize: ffmpeg -i {input_filename} -vf "scale=400:400" output.png
 - Compress JPEG (quality 1-31, lower=better): ffmpeg -i {input_filename} -q:v 5 output.jpg
+- Add solid color background to PNG with transparency: ffmpeg -f lavfi -i color=c=black:s=1920x1080 -i {input_filename} -filter_complex "[0][1]overlay=(W-w)/2:(H-h)/2" -frames:v 1 output.png
+- Change white background to black: ffmpeg -i {input_filename} -vf "colorkey=white:0.3:0.2,format=rgba" -f lavfi -i color=c=black:s=1920x1080 -filter_complex "[1][0]overlay" -frames:v 1 output.png
+- Replace green screen with color: ffmpeg -i {input_filename} -vf "colorkey=0x00FF00:0.3:0.2" -f lavfi -i color=c=blue:s=1920x1080 -filter_complex "[1][0]overlay" -frames:v 1 output.png
+- Add white background to transparent image: ffmpeg -f lavfi -i color=c=white:s=1920x1080 -i {input_filename} -filter_complex "[0][1]overlay=(W-w)/2:(H-h)/2" -frames:v 1 output.jpg
 
 # NEW: Added these important rules to prevent bad commands
 IMPORTANT RULES:
@@ -47,6 +52,10 @@ IMPORTANT RULES:
 - Do NOT use -c:v for simple image conversions
 - Keep commands simple - ffmpeg handles format conversion automatically based on output extension
 - Each command should be a single, complete ffmpeg command
+- For background operations: Use the image metadata dimensions (width x height) for color backgrounds
+- CRITICAL: When using -f lavfi color input, ALWAYS add -frames:v 1 before the output filename to write a single frame
+- Background changes only work for: images with transparency, or images with solid-color backgrounds using colorkey
+- If the user requests background changes on a regular photo without transparency, explain in the summary that FFmpeg cannot detect subjects and suggest converting to PNG with transparency first
 
 Respond ONLY with valid JSON in this exact format:
 {{

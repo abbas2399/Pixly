@@ -9,7 +9,6 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [jobStatus, setJobStatus] = useState<JobStatusResponse | null>(null);
   const [error, setError] = useState('');
-  // FIXED: Added currentStep variable
   const [currentStep, setCurrentStep] = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -19,8 +18,8 @@ function App() {
         setError('Please select an image file');
         return;
       }
-      if (file.size > 50 * 1024 * 1024) {
-        setError('File size must be less than 50MB');
+      if (file.size > 5 * 1024 * 1024) {
+        setError('File size must be less than 5MB');
         return;
       }
       setSelectedFile(file);
@@ -37,11 +36,6 @@ function App() {
       try {
         const status = await apiService.getJobStatus(jobId);
         setJobStatus(status);
-
-        // Update current step from backend
-        if (status.currentStep) {
-          setCurrentStep(status.currentStep);
-        }
 
         if (status.status === 'completed' || status.status === 'failed') {
           setIsProcessing(false);
@@ -186,11 +180,11 @@ function App() {
             {isProcessing ? 'Processing...' : 'Process Image'}
           </button>
 
-          {/* NEW: Processing Steps Display */}
-          {isProcessing && currentStep && (
+          {/* Processing Steps Display */}
+          {isProcessing && (currentStep || jobStatus?.currentStep) && (
             <div className="processing-steps">
               <div className="spinner"></div>
-              <p>{currentStep}</p>
+              <p>{currentStep || jobStatus?.currentStep}</p>
             </div>
           )}
 
