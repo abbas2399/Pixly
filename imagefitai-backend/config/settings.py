@@ -94,9 +94,12 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CORS — Set your frontend domain in production
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
-if DEBUG:
+# CORS — Set your frontend domain in production via CORS_ALLOWED_ORIGINS env var.
+# If not set, allow all origins (safe for a public demo; restrict for private apps).
+_cors_origins = os.getenv('CORS_ALLOWED_ORIGINS', '')
+if _cors_origins:
+    CORS_ALLOWED_ORIGINS = [o.strip() for o in _cors_origins.split(',') if o.strip()]
+else:
     CORS_ALLOW_ALL_ORIGINS = True
 
 # REST Framework
