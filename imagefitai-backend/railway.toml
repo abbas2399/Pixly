@@ -2,9 +2,4 @@
 builder = "dockerfile"
 
 [deploy]
-# collectstatic is already run at Docker build time (see Dockerfile RUN step).
-# Running it again here delays startup and can cause Railway's probe to time out
-# before gunicorn binds, producing a 502 → no CORS headers in the browser.
-startCommand = "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 120"
-healthcheckPath = "/api/jobs/health"
-healthcheckTimeout = 120
+startCommand = "sh start.sh"
